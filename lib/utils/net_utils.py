@@ -376,7 +376,20 @@ def load_network(net, model_dir, resume=True, epoch=-1, strict=True):
 
     print('load model: {}'.format(model_path))
     pretrained_model = torch.load(model_path)
-    net.load_state_dict(pretrained_model['net'], strict=strict)
+    try:
+        net.load_state_dict(pretrained_model['net'], strict=strict)
+    except:
+        new_dict = {}
+        for k,v in pretrained_model['net'].items():
+            if ('xyzc_net.conv' in k or 'xyzc_net.down' in k) and \
+                '.weight' in k and v.dim()==5:
+                try:
+                    new_dict[k] = torch.permute(v, (4,0,1,2,3))
+                except:
+                    import ipdb; ipdb.set_trace()
+            else:
+                new_dict[k] = v
+        net.load_state_dict(new_dict, strict=strict)
     return pretrained_model['epoch'] + 1
 
 
